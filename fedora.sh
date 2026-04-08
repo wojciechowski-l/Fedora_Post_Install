@@ -74,10 +74,7 @@ if [ "$RUN_FULL" = true ]; then
 
     # 9. PowerShell
 
-    source /etc/os-release
-    fedora_ver=$VERSION_ID
-
-    curl -sSL -O https://packages.microsoft.com/config/fedora/$fedora_ver/packages-microsoft-prod.rpm
+    curl -sSL -O https://packages.microsoft.com/config/rhel/9/packages-microsoft-prod.rpm
 
     sudo rpm -i packages-microsoft-prod.rpm
 
