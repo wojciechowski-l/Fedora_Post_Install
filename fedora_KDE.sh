@@ -7,15 +7,19 @@ usage() {
     echo "Usage: $0 [option]"
     echo ""
     echo "  full      - Run complete system setup (default if no argument given)"
+    echo "  base      - Full setup without drivers"
+    echo "  drivers   - Install Nvidia/Intel drivers and configure Secure Boot only"
     echo "  aseprite  - Build and install Aseprite only"
     echo "  proton-ge - Install latest GE-Proton for Steam only"
     exit 1
 }
 
 case "${1:-full}" in
-    full)      RUN_FULL=true  ; RUN_ASEPRITE=true  ; RUN_PROTON_GE=true  ;;
-    aseprite)  RUN_FULL=false ; RUN_ASEPRITE=true  ; RUN_PROTON_GE=false ;;
-    proton-ge) RUN_FULL=false ; RUN_ASEPRITE=false ; RUN_PROTON_GE=true  ;;
+    full)      RUN_FULL=true  ; RUN_DRIVERS=true  ; RUN_ASEPRITE=true  ; RUN_PROTON_GE=true  ;;
+    base)      RUN_FULL=true  ; RUN_DRIVERS=false ; RUN_ASEPRITE=true  ; RUN_PROTON_GE=true  ;;
+    drivers)   RUN_FULL=false ; RUN_DRIVERS=true  ; RUN_ASEPRITE=false ; RUN_PROTON_GE=false ;;
+    aseprite)  RUN_FULL=false ; RUN_DRIVERS=false ; RUN_ASEPRITE=true  ; RUN_PROTON_GE=false ;;
+    proton-ge) RUN_FULL=false ; RUN_DRIVERS=false ; RUN_ASEPRITE=false ; RUN_PROTON_GE=true  ;;
     *) usage ;;
 esac
 
@@ -28,12 +32,7 @@ if [ "$RUN_FULL" = true ]; then
         https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
     sudo dnf install -y rpmfusion-free-release-tainted rpmfusion-nonfree-release-tainted
 
-    # 2. Secure Boot Support (DO THIS BEFORE NVIDIA)
-    sudo kmodgenca -a
-    sudo mokutil --import /etc/pki/akmods/certs/public_key.der
-    # NOTE: Pick a password (e.g., '1234') to enter on the MOK blue screen after reboot.
-
-    # 3. Core Desktop & Apps
+    # 2. Core Desktop & Apps
     sudo dnf install -y git firefox \
         unrar steam discord vlc keepassxc lutris \
         gnome-terminal dotnet-sdk-10.0 btop krita blender \
@@ -41,45 +40,36 @@ if [ "$RUN_FULL" = true ]; then
         kmod-v4l2loopback obs-studio obs-studio-plugin-vlc-video obs-studio-plugin-vkcapture \
         obs-studio-plugin-webkitgtk obs-studio-plugin-x264 \
 
-    # 4. Nvidia & Intel Drivers
-    sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda xorg-x11-drv-nvidia-cuda-libs \
-        libva-nvidia-driver nvidia-settings intel-media-driver libva-utils vdpauinfo \
-        mesa-vulkan-drivers intel-compute-runtime oneVPL-intel-gpu
-
-    # 5. Multimedia Codecs
+    # 3. Multimedia Codecs
     sudo dnf config-manager setopt fedora-cisco-openh264.enabled=1
     sudo dnf swap -y ffmpeg-free ffmpeg --allowerasing
-    # CHECK DEPENDENCIES 
+    # CHECK DEPENDENCIES
     sudo dnf group install -y multimedia --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin
     sudo dnf install -y libavcodec-freeworld x264 x265 gstreamer1-vaapi dav1d flac gstreamer1-plugins-bad-freeworld --allowerasing
 
-    # 6. VS Code
+    # 4. VS Code
     sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
     echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" | sudo tee /etc/yum.repos.d/vscode.repo > /dev/null
     sudo dnf install -y code
 
-    # 7. Docker Desktop Install
+    # 5. Docker Desktop Install
     sudo dnf config-manager addrepo --from-repofile https://download.docker.com/linux/fedora/docker-ce.repo
     curl -O https://desktop.docker.com/linux/main/amd64/docker-desktop-x86_64.rpm
     sudo dnf install -y ./docker-desktop-x86_64.rpm
     rm docker-desktop-x86_64.rpm
 
-    # 8. Unity Hub
+    # 6. Unity Hub
     sudo sh -c 'echo -e "[unityhub]\nname=Unity Hub\nbaseurl=https://hub.unity3d.com/linux/repos/rpm/stable\nenabled=1\ngpgcheck=1\ngpgkey=https://hub.unity3d.com/linux/repos/rpm/stable/repodata/repomd.xml.key\nrepo_gpgcheck=1" > /etc/yum.repos.d/unityhub.repo'
     sudo dnf install -y unityhub
 
-    # 9. PowerShell
-
+    # 7. PowerShell
     curl -sSL -O https://packages.microsoft.com/config/rhel/9/packages-microsoft-prod.rpm
-
     sudo rpm -i packages-microsoft-prod.rpm
-
     rm packages-microsoft-prod.rpm
-
     sudo dnf update
     sudo dnf install powershell -y
 
-    # 10. ONLYOFFICE Desktop Editors
+    # 8. ONLYOFFICE Desktop Editors
     sudo dnf install -y xorg-x11-font-utils
     sudo rpm -i --nodigest https://sourceforge.net/projects/mscorefonts2/files/rpms/msttcore-fonts-installer-2.6-1.noarch.rpm || true
     curl -L https://download.onlyoffice.com/install/desktop/editors/linux/onlyoffice-desktopeditors.x86_64.rpm \
@@ -87,14 +77,8 @@ if [ "$RUN_FULL" = true ]; then
     sudo dnf install -y /tmp/onlyoffice-desktopeditors.rpm
     rm /tmp/onlyoffice-desktopeditors.rpm
 
-    # 11. Triggering and Waiting for akmod build
-    echo "Starting Nvidia kernel module build..."
-    sudo akmods --force
-    echo "Nvidia module build complete!"
-
-    # 12. Final Services & Boot Config
+    # 9. Final Services & Boot Config
     sudo usermod -aG docker $USER
-    sudo systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service
     sudo localectl set-locale \
         LANG=en_US.UTF-8 \
         LC_NUMERIC=C \
@@ -102,7 +86,6 @@ if [ "$RUN_FULL" = true ]; then
         LC_MONETARY=C \
         LC_MEASUREMENT=C \
         LC_PAPER=C
-
 
     sudo mkdir -p /etc/sddm.conf.d
     sudo tee /etc/sddm.conf.d/kde_settings.conf > /dev/null <<EOF
@@ -128,12 +111,42 @@ SessionDir=/usr/share/wayland-sessions
 SessionDir=/usr/share/xsessions
 EOF
 
+fi
+
+# DRIVER SETUP
+
+if [ "$RUN_DRIVERS" = true ]; then
+
+    echo "Setting up Secure Boot and GPU drivers..."
+
+    # 1. Secure Boot Support (DO THIS BEFORE NVIDIA)
+    sudo kmodgenca -a
+    sudo mokutil --import /etc/pki/akmods/certs/public_key.der
+    # NOTE: Pick a password (e.g., '1234') to enter on the MOK blue screen after reboot.
+
+    # 2. Nvidia & Intel Drivers
+    sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda xorg-x11-drv-nvidia-cuda-libs \
+        libva-nvidia-driver nvidia-settings intel-media-driver libva-utils vdpauinfo \
+        mesa-vulkan-drivers intel-compute-runtime oneVPL-intel-gpu
+
+    # 3. Trigger and wait for akmod build
+    echo "Starting Nvidia kernel module build..."
+    sudo akmods --force
+    echo "Nvidia module build complete!"
+
+    # 4. Nvidia system services
+    sudo systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service
+
+    # 5. KWin / EGL environment for Nvidia
     sudo mkdir -p /etc/environment.d
     echo "KWIN_DRM_USE_EGL_STREAMS=0" | sudo tee /etc/environment.d/kwin-nvidia.conf
     echo "__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json" | sudo tee -a /etc/environment.d/kwin-nvidia.conf
-    # 13. Kernel Parameters
+
+    # 6. Kernel Parameters
     sudo grubby --update-kernel=ALL \
         --args="nvidia-drm.modeset=1 mem_sleep_default=deep intel_pstate=active intel_iommu=on"
+
+    echo "Driver setup complete."
 
 fi
 
@@ -270,8 +283,6 @@ if [ "$RUN_PROTON_GE" = true ]; then
     echo "GE-Proton installed. Restart Steam and enable it under Settings → Compatibility."
 
 fi
-
-
 
 if [ "$RUN_FULL" = true ]; then
     sudo dnf clean all
