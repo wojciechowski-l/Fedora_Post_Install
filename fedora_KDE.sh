@@ -87,30 +87,6 @@ if [ "$RUN_FULL" = true ]; then
         LC_MEASUREMENT=C \
         LC_PAPER=C
 
-    sudo mkdir -p /etc/sddm.conf.d
-    sudo tee /etc/sddm.conf.d/kde_settings.conf > /dev/null <<EOF
-[Autologin]
-Relogin=false
-
-[General]
-HaltCommand=/usr/bin/systemctl poweroff
-RebootCommand=/usr/bin/systemctl reboot
-
-[Theme]
-Current=breeze
-
-[Users]
-MaximumUid=60000
-MinimumUid=1000
-
-[Wayland]
-CompositorCommand=kwin_wayland --drm --no-lockscreen --no-global-shortcuts --locale1
-SessionDir=/usr/share/wayland-sessions
-
-[X11]
-SessionDir=/usr/share/xsessions
-EOF
-
 fi
 
 # DRIVER SETUP
@@ -141,6 +117,13 @@ if [ "$RUN_DRIVERS" = true ]; then
     sudo mkdir -p /etc/environment.d
     echo "KWIN_DRM_USE_EGL_STREAMS=0" | sudo tee /etc/environment.d/kwin-nvidia.conf
     echo "__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json" | sudo tee -a /etc/environment.d/kwin-nvidia.conf
+
+    # 6. Force KWin to use DRM backend on Wayland (required for Nvidia)
+    sudo mkdir -p /etc/sddm.conf.d
+    sudo tee /etc/sddm.conf.d/kwin-nvidia.conf > /dev/null <<EOF
+[Wayland]
+CompositorCommand=kwin_wayland --drm --no-lockscreen --no-global-shortcuts --locale1
+EOF
 
     # 6. Kernel Parameters
     sudo grubby --update-kernel=ALL \
