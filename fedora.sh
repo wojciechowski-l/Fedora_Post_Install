@@ -39,10 +39,11 @@ if [ "$RUN_FULL" = true ]; then
         kscreen plasma-workspace polkit-kde xdg-desktop-portal-kde kde-gtk-config breeze-gtk \
         systemsettings dolphin konsole ark git unrar firefox steam discord vlc keepassxc lutris \
         gnome-terminal man-pages rsync irqbalance dotnet-sdk-10.0 btop krita blender \
-        p7zip p7zip-plugins \
+        p7zip p7zip-plugins spectacle xdg-desktop-portal-gtk \
         fwupd power-profiles-daemon \
         kmod-v4l2loopback obs-studio obs-studio-plugin-vlc-video obs-studio-plugin-vkcapture \
-        obs-studio-plugin-webkitgtk obs-studio-plugin-x264
+        obs-studio-plugin-webkitgtk obs-studio-plugin-x264 \
+        plymouth plymouth-system-theme plymouth-theme-spinner fedora-logos
 
     # 4. Nvidia & Intel Drivers
     sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda xorg-x11-drv-nvidia-cuda-libs \
@@ -54,8 +55,7 @@ if [ "$RUN_FULL" = true ]; then
     sudo dnf config-manager setopt fedora-cisco-openh264.enabled=1
     sudo dnf swap -y ffmpeg-free ffmpeg --allowerasing
     sudo dnf group install -y multimedia --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin
-    sudo dnf install -y libavcodec-freeworld x264 x265 --allowerasing
-    sudo dnf install -y gstreamer1-vaapi dav1d flac gstreamer1-plugins-bad
+    sudo dnf install -y libavcodec-freeworld x264 x265 gstreamer1-vaapi dav1d flac gstreamer1-plugins-bad --allowerasing
 
     # 6. VS Code
     sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
@@ -97,11 +97,17 @@ if [ "$RUN_FULL" = true ]; then
     echo "Nvidia module build complete!"
 
     # 12. Final Services & Boot Config
+    sudo plymouth-set-default-theme spinner -R
     sudo usermod -aG docker $USER
     sudo systemctl set-default graphical.target
     sudo systemctl enable sddm
     sudo systemctl enable --now thermald
     sudo systemctl enable --now power-profiles-daemon
+    sudo systemctl enable --now irqbalance
+    sudo systemctl enable --now bluetooth
+    sudo systemctl enable fstrim.timer
+    sudo systemctl enable fwupd-refresh.timer
+    sudo systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service
     sudo localectl set-locale \
         LANG=en_US.UTF-8 \
         LC_NUMERIC=C \
@@ -112,7 +118,7 @@ if [ "$RUN_FULL" = true ]; then
 
     # 13. Kernel Parameters
     sudo grubby --update-kernel=ALL \
-        --args="mem_sleep_default=deep intel_pstate=active intel_iommu=on"
+        --args="rhgb quiet nvidia-drm.modeset=1 mem_sleep_default=deep intel_pstate=active intel_iommu=on"
 
 fi
 
