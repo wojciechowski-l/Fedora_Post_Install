@@ -66,7 +66,7 @@ if [ "$RUN_FULL" = true ]; then
     curl -sSL -O https://packages.microsoft.com/config/rhel/9/packages-microsoft-prod.rpm
     sudo rpm -i packages-microsoft-prod.rpm
     rm packages-microsoft-prod.rpm
-    sudo dnf update
+    sudo dnf update -y
     sudo dnf install powershell -y
 
     # 8. ONLYOFFICE Desktop Editors
