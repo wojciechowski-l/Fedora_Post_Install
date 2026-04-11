@@ -40,10 +40,11 @@ if [ "$RUN_FULL" = true ]; then
         systemsettings dolphin konsole ark git unrar firefox steam discord vlc keepassxc lutris \
         gnome-terminal man-pages rsync irqbalance dotnet-sdk-10.0 btop krita blender \
         p7zip p7zip-plugins spectacle xdg-desktop-portal-gtk \
-        fwupd power-profiles-daemon \
+        fwupd power-profiles-daemon xdg-user-dirs \
         kmod-v4l2loopback obs-studio obs-studio-plugin-vlc-video obs-studio-plugin-vkcapture \
         obs-studio-plugin-webkitgtk obs-studio-plugin-x264 \
-        plymouth plymouth-system-theme plymouth-theme-spinner fedora-logos
+        plymouth plymouth-system-theme plymouth-theme-spinner fedora-logos \
+        pipewire pipewire-alsa pipewire-pulseaudio pipewire-jack-audio-connection-kit wireplumber
 
     # 4. Nvidia & Intel Drivers
     sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda xorg-x11-drv-nvidia-cuda-libs \
@@ -101,13 +102,15 @@ if [ "$RUN_FULL" = true ]; then
     sudo usermod -aG docker $USER
     sudo systemctl set-default graphical.target
     sudo systemctl enable sddm
-    sudo systemctl enable --now thermald
-    sudo systemctl enable --now power-profiles-daemon
-    sudo systemctl enable --now irqbalance
-    sudo systemctl enable --now bluetooth
+    sudo systemctl enable thermald
+    sudo systemctl enable power-profiles-daemon
+    sudo systemctl enable irqbalance
+    sudo systemctl enable bluetooth
+    sudo systemctl enable NetworkManager
     sudo systemctl enable fstrim.timer
     sudo systemctl enable fwupd-refresh.timer
     sudo systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service
+    systemctl --user enable pipewire pipewire-pulse wireplumber
     sudo localectl set-locale \
         LANG=en_US.UTF-8 \
         LC_NUMERIC=C \
@@ -116,6 +119,35 @@ if [ "$RUN_FULL" = true ]; then
         LC_MEASUREMENT=C \
         LC_PAPER=C
 
+
+    sudo mkdir -p /etc/sddm.conf.d
+    sudo tee /etc/sddm.conf.d/kde_settings.conf > /dev/null <<EOF
+[Autologin]
+Relogin=false
+
+[General]
+HaltCommand=/usr/bin/systemctl poweroff
+RebootCommand=/usr/bin/systemctl reboot
+
+[Theme]
+Current=breeze
+
+[Users]
+MaximumUid=60000
+MinimumUid=1000
+
+[Wayland]
+CompositorCommand=kwin_wayland --drm --no-lockscreen --no-global-shortcuts --locale1
+SessionDir=/usr/share/wayland-sessions
+
+[X11]
+SessionDir=/usr/share/xsessions
+EOF
+
+    sudo mkdir -p /etc/environment.d
+    echo "KWIN_DRM_USE_EGL_STREAMS=0" | sudo tee /etc/environment.d/kwin-nvidia.conf
+    echo "__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json" | sudo tee -a /etc/environment.d/kwin-nvidia.conf
+    xdg-user-dirs-update
     # 13. Kernel Parameters
     sudo grubby --update-kernel=ALL \
         --args="rhgb quiet nvidia-drm.modeset=1 mem_sleep_default=deep intel_pstate=active intel_iommu=on"
