@@ -34,7 +34,7 @@ if [ "$RUN_FULL" = true ]; then
 
     # 2. Core Desktop & Apps
     sudo dnf install -y git firefox \
-        unrar steam discord vlc keepassxc lutris \
+        unrar steam discord vlc keepassxc lutris qbittorrent thunderbird \
         gnome-terminal dotnet-sdk-10.0 btop krita blender \
         p7zip p7zip-plugins \
         kmod-v4l2loopback obs-studio obs-studio-plugin-vlc-video obs-studio-plugin-vkcapture \
@@ -77,7 +77,12 @@ if [ "$RUN_FULL" = true ]; then
     sudo dnf install -y /tmp/onlyoffice-desktopeditors.rpm
     rm /tmp/onlyoffice-desktopeditors.rpm
 
-    # 9. Final Services & Boot Config
+    # 9. ProtonMail Bridge
+    wget https://proton.me/download/bridge/protonmail-bridge-3.23.1-1.x86_64.rpm
+    sudo dnf install ./protonmail-bridge-3.23.1-1.x86_64.rpm
+    rm protonmail-bridge-3.23.1-1.x86_64.rpm
+
+    # 10. Final Services & Boot Config
     sudo usermod -aG docker $USER
     sudo localectl set-locale \
         LANG=en_US.UTF-8 \
