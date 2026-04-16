@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 # USAGE
 
@@ -36,9 +36,9 @@ if [ "$RUN_FULL" = true ]; then
     sudo dnf install -y git firefox \
         unrar steam discord vlc keepassxc lutris qbittorrent thunderbird \
         gnome-terminal dotnet-sdk-10.0 btop krita blender \
-        p7zip p7zip-plugins \
+        p7zip p7zip-plugins strawberry \
         kmod-v4l2loopback obs-studio obs-studio-plugin-vlc-video obs-studio-plugin-vkcapture \
-        obs-studio-plugin-webkitgtk obs-studio-plugin-x264 \
+        obs-studio-plugin-webkitgtk obs-studio-plugin-x264
 
     # 3. Multimedia Codecs
     sudo dnf config-manager setopt fedora-cisco-openh264.enabled=1
@@ -78,9 +78,9 @@ if [ "$RUN_FULL" = true ]; then
     rm /tmp/onlyoffice-desktopeditors.rpm
 
     # 9. ProtonMail Bridge
-    wget https://proton.me/download/bridge/protonmail-bridge-3.23.1-1.x86_64.rpm
-    sudo dnf install ./protonmail-bridge-3.23.1-1.x86_64.rpm
-    rm protonmail-bridge-3.23.1-1.x86_64.rpm
+    BRIDGE_URL=$(curl -s https://api.github.com/repos/ProtonMail/proton-bridge/releases/latest \
+    | grep browser_download_url | cut -d'"' -f4 | grep x86_64.rpm)
+    sudo dnf install -y "$BRIDGE_URL"
 
     # 10. Final Services & Boot Config
     sudo usermod -aG docker $USER
@@ -91,7 +91,6 @@ if [ "$RUN_FULL" = true ]; then
         LC_MONETARY=C \
         LC_MEASUREMENT=C \
         LC_PAPER=C
-
 fi
 
 # DRIVER SETUP
@@ -130,7 +129,7 @@ if [ "$RUN_DRIVERS" = true ]; then
 CompositorCommand=kwin_wayland --drm --no-lockscreen --no-global-shortcuts --locale1
 EOF
 
-    # 6. Kernel Parameters
+    # 7. Kernel Parameters
     sudo grubby --update-kernel=ALL \
         --args="nvidia-drm.modeset=1 mem_sleep_default=deep intel_pstate=active intel_iommu=on"
 
@@ -236,6 +235,26 @@ fi
 if [ "$RUN_PROTON_GE" = true ]; then
 
     echo "Installing latest GE-Proton for Steam..."
+
+    if [ ! -d "$HOME/.steam/steam" ]; then
+        # Launch Steam silently in the background
+        steam -silent &
+        STEAM_PID=$!
+
+        # Wait for Steam to finish updating (login screen = ready)
+        echo "Waiting for Steam to initialize..."
+        until pgrep -f "steamwebhelper" > /dev/null 2>&1; do
+            sleep 2
+        done
+
+        # Give it a few extra seconds to finish writing directories
+        sleep 5
+
+        # Kill Steam and all its child processes
+        kill $STEAM_PID || true
+        pkill -f steam || true
+        pkill -f steamwebhelper || true
+    fi
 
     PROTON_TMP=/tmp/proton-ge-custom
     rm -rf "$PROTON_TMP"
