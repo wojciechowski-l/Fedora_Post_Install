@@ -40,10 +40,11 @@ if [ "$RUN_FULL" = true ]; then
         kmod-v4l2loopback obs-studio obs-studio-plugin-vlc-video obs-studio-plugin-vkcapture \
         obs-studio-plugin-webkitgtk obs-studio-plugin-x264
 
+    sudo dnf remove podman podman-docker podman-compose
+
     # 3. Multimedia Codecs
     sudo dnf config-manager setopt fedora-cisco-openh264.enabled=1
     sudo dnf swap -y ffmpeg-free ffmpeg --allowerasing
-    # CHECK DEPENDENCIES
     sudo dnf group install -y multimedia --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin
     sudo dnf install -y libavcodec-freeworld x264 x265 gstreamer1-vaapi dav1d flac gstreamer1-plugins-bad-freeworld --allowerasing
 
@@ -57,6 +58,7 @@ if [ "$RUN_FULL" = true ]; then
     curl -O https://desktop.docker.com/linux/main/amd64/docker-desktop-x86_64.rpm
     sudo dnf install -y ./docker-desktop-x86_64.rpm
     rm docker-desktop-x86_64.rpm
+    docker context use desktop-linux
 
     # 6. Unity Hub
     sudo sh -c 'echo -e "[unityhub]\nname=Unity Hub\nbaseurl=https://hub.unity3d.com/linux/repos/rpm/stable\nenabled=1\ngpgcheck=1\ngpgkey=https://hub.unity3d.com/linux/repos/rpm/stable/repodata/repomd.xml.key\nrepo_gpgcheck=1" > /etc/yum.repos.d/unityhub.repo'
