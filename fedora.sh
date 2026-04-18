@@ -31,25 +31,40 @@ if [ "$RUN_FULL" = true ]; then
     sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
         https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
     sudo dnf install -y rpmfusion-free-release-tainted rpmfusion-nonfree-release-tainted
-
-    # 2. Core System
-    sudo dnf install -y plasma-desktop kwin sddm sddm-kcm plasma-nm plasma-pa bluedevil powerdevil bluez wget \
-        kscreen plasma-workspace polkit-kde xdg-desktop-portal-kde kde-gtk-config breeze-gtk \
-        systemsettings dolphin konsole ark man-pages rsync irqbalance spectacle xdg-desktop-portal-gtk \
-        plymouth plymouth-system-theme plymouth-theme-spinner fedora-logos NetworkManager-wifi \
-        pipewire pipewire-alsa pipewire-pulseaudio pipewire-jack-audio-connection-kit wireplumber firewall-config \
-        fwupd power-profiles-daemon xdg-user-dirs xorg-x11-server-Xwayland plasma-systemmonitor partitionmanager kfind \
-        google-noto-sans-fonts google-noto-color-emoji-fonts jetbrains-mono-fonts kdegraphics-thumbnailers ffmpegthumbs \
-        phonon-qt6-backend-vlc plasma-workspace-wallpapers kinfocenter colord-kde kio-admin pinentry-qt kf6-baloo-file
-
-    # 3. Core Desktop & Apps
     sudo dnf remove -y signon-kwallet-extension podman podman-docker podman-compose amd-gpu-firmware amd-ucode-firmware atheros-firmware brcmfmac-firmware mt7xxx-firmware \
         nxpwireless-firmware qcom-wwan-firmware tiwilink-firmware cirrus-audio-firmware ModemManager-glib
     sudo sed -i 's/^excludepkgs=.*/excludepkgs=amd-gpu-firmware,amd-ucode-firmware,atheros-firmware,brcmfmac-firmware,mt7xxx-firmware,nxpwireless-firmware,qcom-wwan-firmware,tiwilink-firmware/' /etc/dnf/dnf.conf
-    sudo dnf install -y git firefox \
-        unrar steam discord vlc keepassxc lutris qbittorrent thunderbird \
-        dotnet-sdk-10.0 btop fastfetch protontricks mangohud \
-        p7zip p7zip-plugins strawberry qimgv virt-manager 
+
+    # 2. Core System
+    sudo dnf install -y \
+    sddm sddm-breeze sddm-kcm kde-settings-sddm \
+    plasma-desktop kwin plasma-workspace xorg-x11-server-Xwayland \
+    polkit-kde xdg-desktop-portal-kde xdg-desktop-portal-gtk \
+    systemsettings kscreen kinfocenter colord-kde \
+    plasma-nm NetworkManager-wifi firewall-config \
+    bluez bluedevil powerdevil power-profiles-daemon \
+    fwupd irqbalance rsync wget \
+    pipewire pipewire-alsa pipewire-pulseaudio \
+    pipewire-jack-audio-connection-kit wireplumber plasma-pa \
+    dolphin konsole ark spectacle partitionmanager kfind \
+    plasma-systemmonitor kio-admin pinentry-qt kf6-baloo-file \
+    breeze-gtk kde-gtk-config bash-color-prompt \
+    google-noto-sans-fonts google-noto-color-emoji-fonts jetbrains-mono-fonts \
+    plasma-workspace-wallpapers plymouth plymouth-system-theme \
+    plymouth-theme-spinner fedora-logos \
+    kdegraphics-thumbnailers ffmpegthumbs phonon-qt6-backend-vlc \
+    man-pages xdg-user-dirs
+    sudo dnf remove -y plasma-welcome
+
+    # 3. Core Desktop & Apps    
+    sudo dnf install -y \
+    firefox thunderbird discord \
+    steam lutris protontricks mangohud \
+    vlc strawberry qimgv \
+    keepassxc qbittorrent \
+    git dotnet-sdk-10.0 \
+    btop fastfetch virt-manager \
+    unrar p7zip p7zip-plugins
 
     # 4. Multimedia Codecs
     sudo dnf config-manager setopt fedora-cisco-openh264.enabled=1
@@ -152,27 +167,9 @@ if [ "$RUN_DRIVERS" = true ]; then
 
     # 6. Force KWin to use DRM backend on Wayland (required for Nvidia)
     sudo mkdir -p /etc/sddm.conf.d
-    sudo tee /etc/sddm.conf.d/kde_settings.conf > /dev/null <<EOF
-[Autologin]
-Relogin=false
-
-[General]
-HaltCommand=/usr/bin/systemctl poweroff
-RebootCommand=/usr/bin/systemctl reboot
-
-[Theme]
-Current=breeze
-
-[Users]
-MaximumUid=60000
-MinimumUid=1000
-
+    sudo tee /etc/sddm.conf.d/kwin-nvidia.conf > /dev/null <<EOF
 [Wayland]
 CompositorCommand=kwin_wayland --drm --no-lockscreen --no-global-shortcuts --locale1
-SessionDir=/usr/share/wayland-sessions
-
-[X11]
-SessionDir=/usr/share/xsessions
 EOF
 
     # 7. Kernel Parameters
@@ -281,26 +278,6 @@ fi
 if [ "$RUN_PROTON_GE" = true ]; then
 
     echo "Installing latest GE-Proton for Steam..."
-
-    if [ ! -d "$HOME/.steam/steam" ]; then
-        # Launch Steam silently in the background
-        steam -silent &
-        STEAM_PID=$!
-
-        # Wait for Steam to finish updating (login screen = ready)
-        echo "Waiting for Steam to initialize..."
-        until pgrep -f "steamwebhelper" > /dev/null 2>&1; do
-            sleep 2
-        done
-
-        # Give it a few extra seconds to finish writing directories
-        sleep 5
-
-        # Kill Steam and all its child processes
-        kill $STEAM_PID || true
-        pkill -f steam || true
-        pkill -f steamwebhelper || true
-    fi
 
     PROTON_TMP=/tmp/proton-ge-custom
     rm -rf "$PROTON_TMP"
