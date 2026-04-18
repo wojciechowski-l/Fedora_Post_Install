@@ -36,9 +36,9 @@ if [ "$RUN_FULL" = true ]; then
     sudo dnf install -y git firefox \
         unrar steam discord vlc keepassxc lutris qbittorrent thunderbird \
         gnome-terminal dotnet-sdk-10.0 btop krita blender \
-        p7zip p7zip-plugins strawberry \
+        p7zip p7zip-plugins strawberry qimgv virt-manager fastfetch \
         kmod-v4l2loopback obs-studio obs-studio-plugin-vlc-video obs-studio-plugin-vkcapture \
-        obs-studio-plugin-webkitgtk obs-studio-plugin-x264
+        obs-studio-plugin-webkitgtk obs-studio-plugin-x264 
 
     sudo dnf remove podman podman-docker podman-compose
 
@@ -52,6 +52,8 @@ if [ "$RUN_FULL" = true ]; then
     sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
     echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" | sudo tee /etc/yum.repos.d/vscode.repo > /dev/null
     sudo dnf install -y code
+    mkdir -p "${HOME}/.vscode"
+    echo '{"password-store": "gnome-libsecret"}' > "${HOME}/.vscode/argv.json"
 
     # 5. Docker Desktop Install
     sudo dnf config-manager addrepo --from-repofile https://download.docker.com/linux/fedora/docker-ce.repo
@@ -81,7 +83,7 @@ if [ "$RUN_FULL" = true ]; then
 
     # 9. ProtonMail Bridge
     BRIDGE_URL=$(curl -s https://api.github.com/repos/ProtonMail/proton-bridge/releases/latest \
-    | grep browser_download_url | cut -d'"' -f4 | grep x86_64.rpm)
+    | jq -r '.assets[].browser_download_url | select(endswith("x86_64.rpm"))')
     sudo dnf install -y "$BRIDGE_URL"
 
     # 10. Final Services & Boot Config

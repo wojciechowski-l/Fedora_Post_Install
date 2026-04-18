@@ -33,17 +33,20 @@ if [ "$RUN_FULL" = true ]; then
     sudo dnf install -y rpmfusion-free-release-tainted rpmfusion-nonfree-release-tainted
 
     # 2. Core System
-    sudo dnf install -y plasma-desktop kwin sddm sddm-kcm plasma-nm plasma-pa bluedevil powerdevil \
+    sudo dnf install -y plasma-desktop kwin sddm sddm-kcm plasma-nm plasma-pa bluedevil powerdevil bluez wget \
         kscreen plasma-workspace polkit-kde xdg-desktop-portal-kde kde-gtk-config breeze-gtk \
         systemsettings dolphin konsole ark man-pages rsync irqbalance spectacle xdg-desktop-portal-gtk \
-        plymouth plymouth-system-theme plymouth-theme-spinner fedora-logos \
+        plymouth plymouth-system-theme plymouth-theme-spinner fedora-logos NetworkManager-wifi \
         pipewire pipewire-alsa pipewire-pulseaudio pipewire-jack-audio-connection-kit wireplumber \
-        fwupd power-profiles-daemon xdg-user-dirs
+        fwupd power-profiles-daemon xdg-user-dirs xorg-x11-server-Xwayland plasma-systemmonitor \
+        google-noto-sans-fonts google-noto-color-emoji-fonts jetbrains-mono-fonts kdegraphics-thumbnailers ffmpegthumbs \
+        phonon-qt6-backend-vlc plasma-workspace-wallpapers kinfocenter colord-kde
 
     # 3. Core Desktop & Apps
-    sudo dnf install -y  git unrar firefox steam discord vlc keepassxc lutris \
-        gnome-terminal dotnet-sdk-10.0 btop krita blender \
-        p7zip p7zip-plugins thunderbird qbittorrent strawberry \
+    sudo dnf install -y git firefox \
+        unrar steam discord vlc keepassxc lutris qbittorrent thunderbird \
+        gnome-terminal dotnet-sdk-10.0 btop krita blender fastfetch \
+        p7zip p7zip-plugins strawberry qimgv virt-manager \
         kmod-v4l2loopback obs-studio obs-studio-plugin-vlc-video obs-studio-plugin-vkcapture \
         obs-studio-plugin-webkitgtk obs-studio-plugin-x264
 
@@ -57,6 +60,8 @@ if [ "$RUN_FULL" = true ]; then
     sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
     echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" | sudo tee /etc/yum.repos.d/vscode.repo > /dev/null
     sudo dnf install -y code
+    mkdir -p "${HOME}/.vscode"
+    echo '{"password-store": "gnome-libsecret"}' > "${HOME}/.vscode/argv.json"
 
     # 6. Docker Desktop Install
     sudo dnf config-manager addrepo --from-repofile https://download.docker.com/linux/fedora/docker-ce.repo
@@ -73,7 +78,6 @@ if [ "$RUN_FULL" = true ]; then
     curl -sSL -O https://packages.microsoft.com/config/rhel/9/packages-microsoft-prod.rpm
     sudo rpm -i packages-microsoft-prod.rpm
     rm packages-microsoft-prod.rpm
-    sudo dnf update -y
     sudo dnf install powershell -y
 
     # 9. ONLYOFFICE Desktop Editors
@@ -86,7 +90,7 @@ if [ "$RUN_FULL" = true ]; then
 
     # 10. ProtonMail Bridge
     BRIDGE_URL=$(curl -s https://api.github.com/repos/ProtonMail/proton-bridge/releases/latest \
-    | grep browser_download_url | cut -d'"' -f4 | grep x86_64.rpm)
+    | jq -r '.assets[].browser_download_url | select(endswith("x86_64.rpm"))')
     sudo dnf install -y "$BRIDGE_URL"
 
     # 11. Final Services & Boot Config
@@ -94,15 +98,13 @@ if [ "$RUN_FULL" = true ]; then
     sudo usermod -aG docker $USER
     sudo systemctl set-default graphical.target
     sudo systemctl enable sddm
-    sudo systemctl enable thermald
     sudo systemctl enable power-profiles-daemon
     sudo systemctl enable irqbalance
     sudo systemctl enable bluetooth
     sudo systemctl enable NetworkManager
     sudo systemctl enable fstrim.timer
     sudo systemctl enable fwupd-refresh.timer
-    sudo systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service
-    systemctl --user enable pipewire pipewire-pulse wireplumber
+    # systemctl --user enable pipewire pipewire-pulse wireplumber
     sudo localectl set-locale \
         LANG=en_US.UTF-8 \
         LC_NUMERIC=C \
@@ -111,7 +113,43 @@ if [ "$RUN_FULL" = true ]; then
         LC_MEASUREMENT=C \
         LC_PAPER=C
 
+    xdg-user-dirs-update
+    # 12. Kernel Parameters
+    sudo grubby --update-kernel=ALL \
+        --args="rhgb quiet"
+fi
 
+# DRIVER SETUP
+
+if [ "$RUN_DRIVERS" = true ]; then
+
+    echo "Setting up Secure Boot and GPU drivers..."
+
+    # 1. Secure Boot Support (DO THIS BEFORE NVIDIA)
+    sudo dnf install -y kmodtool akmods mokutil openssl
+    sudo kmodgenca -a
+    sudo mokutil --import /etc/pki/akmods/certs/public_key.der
+    # NOTE: Pick a password (e.g., '1234') to enter on the MOK blue screen after reboot.
+
+    # 2. Nvidia & Intel Drivers
+    sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda xorg-x11-drv-nvidia-cuda-libs \
+        libva-nvidia-driver nvidia-settings intel-media-driver libva-utils vdpauinfo \
+        mesa-vulkan-drivers intel-compute-runtime oneVPL-intel-gpu thermald
+
+    # 3. Trigger and wait for akmod build
+    echo "Starting Nvidia kernel module build..."
+    sudo akmods --force
+    echo "Nvidia module build complete!"
+
+    # 4. Nvidia system services
+    sudo systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service thermald
+
+    # 5. KWin / EGL environment for Nvidia
+    sudo mkdir -p /etc/environment.d
+    echo "KWIN_DRM_USE_EGL_STREAMS=0" | sudo tee /etc/environment.d/kwin-nvidia.conf
+    echo "__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json" | sudo tee -a /etc/environment.d/kwin-nvidia.conf
+
+    # 6. Force KWin to use DRM backend on Wayland (required for Nvidia)
     sudo mkdir -p /etc/sddm.conf.d
     sudo tee /etc/sddm.conf.d/kde_settings.conf > /dev/null <<EOF
 [Autologin]
@@ -134,53 +172,6 @@ SessionDir=/usr/share/wayland-sessions
 
 [X11]
 SessionDir=/usr/share/xsessions
-EOF
-
-    sudo mkdir -p /etc/environment.d
-    echo "KWIN_DRM_USE_EGL_STREAMS=0" | sudo tee /etc/environment.d/kwin-nvidia.conf
-    echo "__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json" | sudo tee -a /etc/environment.d/kwin-nvidia.conf
-    xdg-user-dirs-update
-    # 13. Kernel Parameters
-    sudo grubby --update-kernel=ALL \
-        --args="rhgb quiet"
-
-fi
-
-# DRIVER SETUP
-
-if [ "$RUN_DRIVERS" = true ]; then
-
-    echo "Setting up Secure Boot and GPU drivers..."
-
-    # 1. Secure Boot Support (DO THIS BEFORE NVIDIA)
-    sudo dnf install -y kmodtool akmods mokutil openssl
-    sudo kmodgenca -a
-    sudo mokutil --import /etc/pki/akmods/certs/public_key.der
-    # NOTE: Pick a password (e.g., '1234') to enter on the MOK blue screen after reboot.
-
-    # 2. Nvidia & Intel Drivers
-    sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda xorg-x11-drv-nvidia-cuda-libs \
-        libva-nvidia-driver nvidia-settings intel-media-driver libva-utils vdpauinfo \
-        mesa-vulkan-drivers intel-compute-runtime oneVPL-intel-gpu
-
-    # 3. Trigger and wait for akmod build
-    echo "Starting Nvidia kernel module build..."
-    sudo akmods --force
-    echo "Nvidia module build complete!"
-
-    # 4. Nvidia system services
-    sudo systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service
-
-    # 5. KWin / EGL environment for Nvidia
-    sudo mkdir -p /etc/environment.d
-    echo "KWIN_DRM_USE_EGL_STREAMS=0" | sudo tee /etc/environment.d/kwin-nvidia.conf
-    echo "__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json" | sudo tee -a /etc/environment.d/kwin-nvidia.conf
-
-    # 6. Force KWin to use DRM backend on Wayland (required for Nvidia)
-    sudo mkdir -p /etc/sddm.conf.d
-    sudo tee /etc/sddm.conf.d/kwin-nvidia.conf > /dev/null <<EOF
-[Wayland]
-CompositorCommand=kwin_wayland --drm --no-lockscreen --no-global-shortcuts --locale1
 EOF
 
     # 7. Kernel Parameters
