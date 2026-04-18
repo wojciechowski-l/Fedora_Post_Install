@@ -37,17 +37,19 @@ if [ "$RUN_FULL" = true ]; then
         kscreen plasma-workspace polkit-kde xdg-desktop-portal-kde kde-gtk-config breeze-gtk \
         systemsettings dolphin konsole ark man-pages rsync irqbalance spectacle xdg-desktop-portal-gtk \
         plymouth plymouth-system-theme plymouth-theme-spinner fedora-logos NetworkManager-wifi \
-        pipewire pipewire-alsa pipewire-pulseaudio pipewire-jack-audio-connection-kit wireplumber \
-        fwupd power-profiles-daemon xdg-user-dirs xorg-x11-server-Xwayland plasma-systemmonitor \
+        pipewire pipewire-alsa pipewire-pulseaudio pipewire-jack-audio-connection-kit wireplumber firewall-config \
+        fwupd power-profiles-daemon xdg-user-dirs xorg-x11-server-Xwayland plasma-systemmonitor partitionmanager kfind \
         google-noto-sans-fonts google-noto-color-emoji-fonts jetbrains-mono-fonts kdegraphics-thumbnailers ffmpegthumbs \
-        phonon-qt6-backend-vlc plasma-workspace-wallpapers kinfocenter colord-kde
+        phonon-qt6-backend-vlc plasma-workspace-wallpapers kinfocenter colord-kde kio-admin pinentry-qt kf6-baloo-file
 
     # 3. Core Desktop & Apps
-    sudo dnf remove podman podman-docker podman-compose
+    sudo dnf remove -y signon-kwallet-extension podman podman-docker podman-compose amd-gpu-firmware amd-ucode-firmware atheros-firmware brcmfmac-firmware mt7xxx-firmware \
+        nxpwireless-firmware qcom-wwan-firmware tiwilink-firmware cirrus-audio-firmware ModemManager-glib
+    sudo sed -i 's/^excludepkgs=.*/excludepkgs=amd-gpu-firmware,amd-ucode-firmware,atheros-firmware,brcmfmac-firmware,mt7xxx-firmware,nxpwireless-firmware,qcom-wwan-firmware,tiwilink-firmware/' /etc/dnf/dnf.conf
     sudo dnf install -y git firefox \
         unrar steam discord vlc keepassxc lutris qbittorrent thunderbird \
         dotnet-sdk-10.0 btop fastfetch protontricks mangohud \
-        p7zip p7zip-plugins strawberry qimgv virt-manager
+        p7zip p7zip-plugins strawberry qimgv virt-manager 
 
     # 4. Multimedia Codecs
     sudo dnf config-manager setopt fedora-cisco-openh264.enabled=1
@@ -64,8 +66,8 @@ if [ "$RUN_FULL" = true ]; then
 
     # 6. Docker Engine Install
     sudo dnf config-manager addrepo --from-repofile https://download.docker.com/linux/fedora/docker-ce.repo
-    sudo dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-    docker context use desktop-linux
+    sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    #docker context use desktop-linux
 
     # 7. Unity Hub
     sudo sh -c 'echo -e "[unityhub]\nname=Unity Hub\nbaseurl=https://hub.unity3d.com/linux/repos/rpm/stable\nenabled=1\ngpgcheck=1\ngpgkey=https://hub.unity3d.com/linux/repos/rpm/stable/repodata/repomd.xml.key\nrepo_gpgcheck=1" > /etc/yum.repos.d/unityhub.repo'
@@ -102,7 +104,8 @@ if [ "$RUN_FULL" = true ]; then
     sudo systemctl enable fstrim.timer
     sudo systemctl enable fwupd-refresh.timer
     sudo usermod -aG docker $USER
-    # systemctl --user enable pipewire pipewire-pulse wireplumber
+    git config --global user.name "wojciechowski-l"
+    git config --global user.email "wojciechowski.l@protonmail.com"
     sudo localectl set-locale \
         LANG=en_US.UTF-8 \
         LC_NUMERIC=C \
