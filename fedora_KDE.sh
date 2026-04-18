@@ -35,10 +35,10 @@ if [ "$RUN_FULL" = true ]; then
     # 2. Core Desktop & Apps
     sudo dnf install -y git firefox \
         unrar steam discord vlc keepassxc lutris qbittorrent thunderbird \
-        gnome-terminal dotnet-sdk-10.0 btop krita blender \
+        gnome-terminal dotnet-sdk-10.0 btop krita blender mangohud \
         p7zip p7zip-plugins strawberry qimgv virt-manager fastfetch \
         kmod-v4l2loopback obs-studio obs-studio-plugin-vlc-video obs-studio-plugin-vkcapture \
-        obs-studio-plugin-webkitgtk obs-studio-plugin-x264 
+        obs-studio-plugin-webkitgtk obs-studio-plugin-x264 protontricks
 
     sudo dnf remove podman podman-docker podman-compose
 

@@ -16,7 +16,7 @@ usage() {
 
 case "${1:-full}" in
     full)      RUN_FULL=true  ; RUN_DRIVERS=true  ; RUN_ASEPRITE=true  ; RUN_PROTON_GE=true  ;;
-    base)      RUN_FULL=true  ; RUN_DRIVERS=false ; RUN_ASEPRITE=true  ; RUN_PROTON_GE=true  ;;
+    base)      RUN_FULL=true  ; RUN_DRIVERS=false ; RUN_ASEPRITE=true  ; RUN_PROTON_GE=false  ;;
     drivers)   RUN_FULL=false ; RUN_DRIVERS=true  ; RUN_ASEPRITE=false ; RUN_PROTON_GE=false ;;
     aseprite)  RUN_FULL=false ; RUN_DRIVERS=false ; RUN_ASEPRITE=true  ; RUN_PROTON_GE=false ;;
     proton-ge) RUN_FULL=false ; RUN_DRIVERS=false ; RUN_ASEPRITE=false ; RUN_PROTON_GE=true  ;;
@@ -43,12 +43,11 @@ if [ "$RUN_FULL" = true ]; then
         phonon-qt6-backend-vlc plasma-workspace-wallpapers kinfocenter colord-kde
 
     # 3. Core Desktop & Apps
+    sudo dnf remove podman podman-docker podman-compose
     sudo dnf install -y git firefox \
         unrar steam discord vlc keepassxc lutris qbittorrent thunderbird \
-        gnome-terminal dotnet-sdk-10.0 btop krita blender fastfetch \
-        p7zip p7zip-plugins strawberry qimgv virt-manager \
-        kmod-v4l2loopback obs-studio obs-studio-plugin-vlc-video obs-studio-plugin-vkcapture \
-        obs-studio-plugin-webkitgtk obs-studio-plugin-x264
+        dotnet-sdk-10.0 btop fastfetch protontricks mangohud \
+        p7zip p7zip-plugins strawberry qimgv virt-manager
 
     # 4. Multimedia Codecs
     sudo dnf config-manager setopt fedora-cisco-openh264.enabled=1
@@ -63,11 +62,9 @@ if [ "$RUN_FULL" = true ]; then
     mkdir -p "${HOME}/.vscode"
     echo '{"password-store": "gnome-libsecret"}' > "${HOME}/.vscode/argv.json"
 
-    # 6. Docker Desktop Install
+    # 6. Docker Engine Install
     sudo dnf config-manager addrepo --from-repofile https://download.docker.com/linux/fedora/docker-ce.repo
-    curl -O https://desktop.docker.com/linux/main/amd64/docker-desktop-x86_64.rpm
-    sudo dnf install -y ./docker-desktop-x86_64.rpm
-    rm docker-desktop-x86_64.rpm
+    sudo dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
     docker context use desktop-linux
 
     # 7. Unity Hub
@@ -95,8 +92,8 @@ if [ "$RUN_FULL" = true ]; then
 
     # 11. Final Services & Boot Config
     sudo plymouth-set-default-theme spinner -R
-    sudo usermod -aG docker $USER
     sudo systemctl set-default graphical.target
+    sudo systemctl enable docker
     sudo systemctl enable sddm
     sudo systemctl enable power-profiles-daemon
     sudo systemctl enable irqbalance
@@ -104,6 +101,7 @@ if [ "$RUN_FULL" = true ]; then
     sudo systemctl enable NetworkManager
     sudo systemctl enable fstrim.timer
     sudo systemctl enable fwupd-refresh.timer
+    sudo usermod -aG docker $USER
     # systemctl --user enable pipewire pipewire-pulse wireplumber
     sudo localectl set-locale \
         LANG=en_US.UTF-8 \
