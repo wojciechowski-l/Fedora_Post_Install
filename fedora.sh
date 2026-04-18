@@ -121,6 +121,7 @@ if [ "$RUN_FULL" = true ]; then
     sudo usermod -aG docker $USER
     git config --global user.name "wojciechowski-l"
     git config --global user.email "wojciechowski.l@protonmail.com"
+    echo "Hidden=true" >> "$HOME/.config/autostart/Proton Mail Bridge.desktop"
     sudo localectl set-locale \
         LANG=en_US.UTF-8 \
         LC_NUMERIC=C \
@@ -128,6 +129,23 @@ if [ "$RUN_FULL" = true ]; then
         LC_MONETARY=C \
         LC_MEASUREMENT=C \
         LC_PAPER=C
+    mkdir -p ~/.config && cat <<EOF > ~/.config/kwalletrc
+[Wallet]
+Close When Idle=false
+Close on Screensaver=false
+Default Wallet=kdewallet
+Enabled=false
+First Use=false
+Idle Timeout=10
+Launch Manager=false
+Leave Manager Open=false
+Leave Open=true
+Prompt on Open=false
+Use One Wallet=true
+
+[org.freedesktop.secrets]
+apiEnabled=false
+EOF
 
     xdg-user-dirs-update
     # 12. Kernel Parameters
