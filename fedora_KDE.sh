@@ -15,11 +15,11 @@ usage() {
 }
 
 case "${1:-full}" in
-    full)      RUN_FULL=true  ; RUN_DRIVERS=true  ; RUN_ASEPRITE=true  ; RUN_PROTON_GE=true  ;;
-    base)      RUN_FULL=true  ; RUN_DRIVERS=false ; RUN_ASEPRITE=true  ; RUN_PROTON_GE=true  ;;
-    drivers)   RUN_FULL=false ; RUN_DRIVERS=true  ; RUN_ASEPRITE=false ; RUN_PROTON_GE=false ;;
-    aseprite)  RUN_FULL=false ; RUN_DRIVERS=false ; RUN_ASEPRITE=true  ; RUN_PROTON_GE=false ;;
-    proton-ge) RUN_FULL=false ; RUN_DRIVERS=false ; RUN_ASEPRITE=false ; RUN_PROTON_GE=true  ;;
+    full)      RUN_FULL=true  ; RUN_DRIVERS=true  ; RUN_ASEPRITE=true  ; RUN_PROTON_GE=true   ;;
+    base)      RUN_FULL=true  ; RUN_DRIVERS=false ; RUN_ASEPRITE=true  ; RUN_PROTON_GE=false  ;;
+    drivers)   RUN_FULL=false ; RUN_DRIVERS=true  ; RUN_ASEPRITE=false ; RUN_PROTON_GE=false  ;;
+    aseprite)  RUN_FULL=false ; RUN_DRIVERS=false ; RUN_ASEPRITE=true  ; RUN_PROTON_GE=false  ;;
+    proton-ge) RUN_FULL=false ; RUN_DRIVERS=false ; RUN_ASEPRITE=false ; RUN_PROTON_GE=true   ;;
     *) usage ;;
 esac
 
@@ -34,7 +34,7 @@ if [ "$RUN_FULL" = true ]; then
 
     # 2. Core Desktop & Apps
     sudo dnf install -y git firefox \
-        unrar steam discord vlc keepassxc lutris qbittorrent thunderbird \
+        unrar steam discord vlc keepassxc lutris qbittorrent thunderbird qalculate-qt \
         gnome-terminal dotnet-sdk-10.0 btop krita blender mangohud \
         p7zip p7zip-plugins strawberry qimgv virt-manager fastfetch \
         kmod-v4l2loopback obs-studio obs-studio-plugin-vlc-video obs-studio-plugin-vkcapture \

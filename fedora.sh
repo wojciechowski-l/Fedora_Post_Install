@@ -16,7 +16,8 @@ usage() {
 
 case "${1:-full}" in
     full)      RUN_FULL=true  ; RUN_DRIVERS=true  ; RUN_ASEPRITE=true  ; RUN_PROTON_GE=true  ;;
-    base)      RUN_FULL=true  ; RUN_DRIVERS=false ; RUN_ASEPRITE=true  ; RUN_PROTON_GE=false  ;;
+    base)      RUN_FULL=true  ; RUN_DRIVERS=false ; RUN_ASEPRITE=true  ; RUN_PROTON_GE=false ;;
+    post)      RUN_FULL=true  ; RUN_DRIVERS=true  ; RUN_ASEPRITE=true  ; RUN_PROTON_GE=false ;;
     drivers)   RUN_FULL=false ; RUN_DRIVERS=true  ; RUN_ASEPRITE=false ; RUN_PROTON_GE=false ;;
     aseprite)  RUN_FULL=false ; RUN_DRIVERS=false ; RUN_ASEPRITE=true  ; RUN_PROTON_GE=false ;;
     proton-ge) RUN_FULL=false ; RUN_DRIVERS=false ; RUN_ASEPRITE=false ; RUN_PROTON_GE=true  ;;
@@ -58,7 +59,7 @@ if [ "$RUN_FULL" = true ]; then
 
     # 3. Core Desktop & Apps    
     sudo dnf install -y \
-    firefox thunderbird discord \
+    firefox thunderbird discord qalculate-qt \
     steam lutris protontricks mangohud \
     vlc strawberry qimgv \
     keepassxc qbittorrent \
@@ -121,7 +122,7 @@ if [ "$RUN_FULL" = true ]; then
     sudo usermod -aG docker $USER
     git config --global user.name "wojciechowski-l"
     git config --global user.email "wojciechowski.l@protonmail.com"
-    echo "Hidden=true" >> "$HOME/.config/autostart/Proton Mail Bridge.desktop"
+    [ -f "$HOME/.config/autostart/Proton Mail Bridge.desktop" ] && echo "Hidden=true" >> "$HOME/.config/autostart/Proton Mail Bridge.desktop"
     sudo localectl set-locale \
         LANG=en_US.UTF-8 \
         LC_NUMERIC=C \
