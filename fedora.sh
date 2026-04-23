@@ -33,8 +33,9 @@ if [ "$RUN_FULL" = true ]; then
         https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
     sudo dnf install -y rpmfusion-free-release-tainted rpmfusion-nonfree-release-tainted
     sudo dnf remove -y signon-kwallet-extension podman podman-docker podman-compose amd-gpu-firmware amd-ucode-firmware atheros-firmware brcmfmac-firmware mt7xxx-firmware \
-        nxpwireless-firmware qcom-wwan-firmware tiwilink-firmware cirrus-audio-firmware ModemManager-glib
-    sudo sed -i 's/^excludepkgs=.*/excludepkgs=amd-gpu-firmware,amd-ucode-firmware,atheros-firmware,brcmfmac-firmware,mt7xxx-firmware,nxpwireless-firmware,qcom-wwan-firmware,tiwilink-firmware/' /etc/dnf/dnf.conf
+        nxpwireless-firmware qcom-wwan-firmware tiwilink-firmware cirrus-audio-firmware ModemManager-glib sssd-common sssd-kcm policycoreutils dracut-config-rescue audit \
+        vim-minimal
+    #sudo sed -i 's/^excludepkgs=.*/excludepkgs=amd-gpu-firmware,amd-ucode-firmware,atheros-firmware,brcmfmac-firmware,mt7xxx-firmware,nxpwireless-firmware,qcom-wwan-firmware,tiwilink-firmware/' /etc/dnf/dnf.conf
 
     # 2. Core System
     sudo dnf install -y \
@@ -61,7 +62,7 @@ if [ "$RUN_FULL" = true ]; then
     sudo dnf install -y \
     firefox thunderbird discord qalculate-qt \
     steam lutris protontricks mangohud \
-    vlc strawberry qimgv \
+    vlc strawberry qimgv lmms \
     keepassxc qbittorrent \
     git dotnet-sdk-10.0 \
     btop fastfetch virt-manager \
@@ -148,6 +149,12 @@ Use One Wallet=true
 apiEnabled=false
 EOF
 
+    # Ensure XDG Desktop Portals prefer KDE for file pickers/dialogs
+    mkdir -p ~/.config/xdg-desktop-portal && cat <<EOF > ~/.config/xdg-desktop-portal/portals.conf
+[preferred]
+default=kde
+EOF
+
     xdg-user-dirs-update
     # 12. Kernel Parameters
     sudo grubby --update-kernel=ALL \
@@ -189,6 +196,13 @@ if [ "$RUN_DRIVERS" = true ]; then
     sudo tee /etc/sddm.conf.d/kwin-nvidia.conf > /dev/null <<EOF
 [Wayland]
 CompositorCommand=kwin_wayland --drm --no-lockscreen --no-global-shortcuts --locale1
+EOF
+
+    sudo tee /etc/sddm.conf.d/autologin.conf > /dev/null <<EOF
+[Autologin]
+User=januszof
+Session=plasma
+Relogin=true
 EOF
 
     # 7. Kernel Parameters
