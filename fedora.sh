@@ -121,6 +121,7 @@ if [ "$RUN_FULL" = true ]; then
     sudo systemctl enable fstrim.timer
     sudo systemctl enable fwupd-refresh.timer
     sudo usermod -aG docker $USER
+    sudo hostnamectl set-hostname "${USER}-pc"
     git config --global user.name "wojciechowski-l"
     git config --global user.email "wojciechowski.l@protonmail.com"
     [ -f "$HOME/.config/autostart/Proton Mail Bridge.desktop" ] && echo "Hidden=true" >> "$HOME/.config/autostart/Proton Mail Bridge.desktop"
@@ -200,7 +201,7 @@ EOF
 
     sudo tee /etc/sddm.conf.d/autologin.conf > /dev/null <<EOF
 [Autologin]
-User=januszof
+User=$USER
 Session=plasma
 Relogin=true
 EOF
