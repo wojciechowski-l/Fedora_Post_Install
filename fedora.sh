@@ -109,7 +109,11 @@ if [ "$RUN_FULL" = true ]; then
     | jq -r '.assets[].browser_download_url | select(endswith("x86_64.rpm"))')
     sudo dnf install -y "$BRIDGE_URL"
 
-    # 11. Final Services & Boot Config
+    # 11. Signal Desktop
+    sudo dnf config-manager addrepo --from-repofile=https://download.opensuse.org/repositories/network:im:signal/Fedora_43/network:im:signal.repo
+    sudo dnf install signal-desktop
+
+    # 12. Final Services & Boot Config
     sudo plymouth-set-default-theme spinner -R
     sudo systemctl set-default graphical.target
     sudo systemctl enable docker
@@ -157,7 +161,7 @@ default=kde
 EOF
 
     xdg-user-dirs-update
-    # 12. Kernel Parameters
+    # 13. Kernel Parameters
     sudo grubby --update-kernel=ALL \
         --args="rhgb quiet"
 fi
