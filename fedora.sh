@@ -33,9 +33,7 @@ if [ "$RUN_FULL" = true ]; then
         https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
     sudo dnf install -y rpmfusion-free-release-tainted rpmfusion-nonfree-release-tainted
     sudo dnf remove -y signon-kwallet-extension podman podman-docker podman-compose amd-gpu-firmware amd-ucode-firmware atheros-firmware brcmfmac-firmware mt7xxx-firmware \
-        nxpwireless-firmware qcom-wwan-firmware tiwilink-firmware cirrus-audio-firmware ModemManager-glib sssd-common sssd-kcm policycoreutils dracut-config-rescue audit \
-        vim-minimal
-    #sudo sed -i 's/^excludepkgs=.*/excludepkgs=amd-gpu-firmware,amd-ucode-firmware,atheros-firmware,brcmfmac-firmware,mt7xxx-firmware,nxpwireless-firmware,qcom-wwan-firmware,tiwilink-firmware/' /etc/dnf/dnf.conf
+        nxpwireless-firmware qcom-wwan-firmware tiwilink-firmware cirrus-audio-firmware ModemManager-glib sssd-common sssd-kcm audit    
 
     # 2. Core System
     sudo dnf install -y \
@@ -113,7 +111,46 @@ if [ "$RUN_FULL" = true ]; then
     sudo dnf config-manager addrepo --from-repofile=https://download.opensuse.org/repositories/network:im:signal/Fedora_43/network:im:signal.repo
     sudo dnf install signal-desktop
 
-    # 12. Final Services & Boot Config
+    # 12. TDM
+
+    APP_URL="https://github.com/DevilXD/TwitchDropsMiner/releases/download/dev-build/Twitch.Drops.Miner.Linux.AppImage-x86_64.zip"
+    ICON_URL="https://raw.githubusercontent.com/DevilXD/TwitchDropsMiner/master/icons/pickaxe.ico"
+    INSTALL_DIR="$HOME/opt/TwitchDropsMiner"
+    DESKTOP_FILE="$HOME/.local/share/applications/twitch-drops-miner.desktop"
+    ZIP_FILE="/tmp/TwitchDropsMiner.zip"
+
+    mkdir -p "$INSTALL_DIR"
+    mkdir -p "$(dirname "$DESKTOP_FILE")"
+    curl -L "$APP_URL" -o "$ZIP_FILE"
+    curl -L "$ICON_URL" -o "$INSTALL_DIR/pickaxe.ico"
+    unzip -o "$ZIP_FILE" -d "$INSTALL_DIR"
+    find "$INSTALL_DIR" -name "*.AppImage" -exec chmod +x {} \;
+    APPIMAGE_PATH="$(find "$INSTALL_DIR" -name "*.AppImage" | head -n 1)"
+    if [[ -z "$APPIMAGE_PATH" ]]; then
+        echo "Error: AppImage not found after extraction."
+        exit 1
+    fi
+
+    cat > "$DESKTOP_FILE" <<EOF
+[Desktop Entry]
+Comment=
+Exec=$APPIMAGE_PATH
+Icon=$INSTALL_DIR/pickaxe.ico
+Name=Twitch Drops Miner
+NoDisplay=false
+Path=
+PrefersNonDefaultGPU=false
+StartupNotify=true
+Terminal=false
+TerminalOptions=
+Type=Application
+X-KDE-SubstituteUID=false
+X-KDE-Username=
+EOF
+    chmod +x "$DESKTOP_FILE"
+    rm -f "$ZIP_FILE"
+
+    # 13. Final Services & Boot Config
     sudo plymouth-set-default-theme spinner -R
     sudo systemctl set-default graphical.target
     sudo systemctl enable docker
@@ -154,6 +191,10 @@ Use One Wallet=true
 apiEnabled=false
 EOF
 
+    # Fix Discord using kwallet instead of Secret Service
+    cp /usr/share/applications/discord.desktop ~/.local/share/applications/discord.desktop
+    sed -i 's|Exec=/usr/bin/Discord|Exec=/usr/bin/Discord --password-store=gnome-libsecret|' ~/.local/share/applications/discord.desktop
+
     # Ensure XDG Desktop Portals prefer KDE for file pickers/dialogs
     mkdir -p ~/.config/xdg-desktop-portal && cat <<EOF > ~/.config/xdg-desktop-portal/portals.conf
 [preferred]
@@ -161,7 +202,7 @@ default=kde
 EOF
 
     xdg-user-dirs-update
-    # 13. Kernel Parameters
+    # 14. Kernel Parameters
     sudo grubby --update-kernel=ALL \
         --args="rhgb quiet"
 fi
