@@ -37,7 +37,7 @@ if [ "$RUN_FULL" = true ]; then
 
     # 2. Core System
     sudo dnf install -y \
-    sddm sddm-breeze sddm-kcm kde-settings-sddm \
+    plasma-login-manager kcm-plasmalogin \
     plasma-desktop kwin plasma-workspace xorg-x11-server-Xwayland \
     polkit-kde xdg-desktop-portal-kde xdg-desktop-portal-gtk \
     systemsettings kscreen kinfocenter colord-kde \
@@ -123,7 +123,7 @@ if [ "$RUN_FULL" = true ]; then
     mkdir -p "$(dirname "$DESKTOP_FILE")"
     curl -L "$APP_URL" -o "$ZIP_FILE"
     curl -L "$ICON_URL" -o "$INSTALL_DIR/pickaxe.ico"
-    unzip -o "$ZIP_FILE" -d "$INSTALL_DIR"
+    unzip -jo "$ZIP_FILE" -d "$INSTALL_DIR"
     find "$INSTALL_DIR" -name "*.AppImage" -exec chmod +x {} \;
     APPIMAGE_PATH="$(find "$INSTALL_DIR" -name "*.AppImage" | head -n 1)"
     if [[ -z "$APPIMAGE_PATH" ]]; then
@@ -154,7 +154,7 @@ EOF
     sudo plymouth-set-default-theme spinner -R
     sudo systemctl set-default graphical.target
     sudo systemctl enable docker
-    sudo systemctl enable sddm
+    sudo systemctl enable plasmalogin.service
     sudo systemctl enable power-profiles-daemon
     sudo systemctl enable irqbalance
     sudo systemctl enable bluetooth
@@ -237,21 +237,14 @@ if [ "$RUN_DRIVERS" = true ]; then
     echo "KWIN_DRM_USE_EGL_STREAMS=0" | sudo tee /etc/environment.d/kwin-nvidia.conf
     echo "__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json" | sudo tee -a /etc/environment.d/kwin-nvidia.conf
 
-    # 6. Force KWin to use DRM backend on Wayland (required for Nvidia)
-    sudo mkdir -p /etc/sddm.conf.d
-    sudo tee /etc/sddm.conf.d/kwin-nvidia.conf > /dev/null <<EOF
-[Wayland]
-CompositorCommand=kwin_wayland --drm --no-lockscreen --no-global-shortcuts --locale1
-EOF
-
-    sudo tee /etc/sddm.conf.d/autologin.conf > /dev/null <<EOF
+    sudo tee /etc/plasmalogin.conf > /dev/null <<EOF
 [Autologin]
 User=$USER
 Session=plasma
 Relogin=true
 EOF
 
-    # 7. Kernel Parameters
+    # 6. Kernel Parameters
     sudo grubby --update-kernel=ALL \
         --args="nvidia-drm.modeset=1 mem_sleep_default=deep intel_pstate=active intel_iommu=on"
 
