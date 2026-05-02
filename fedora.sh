@@ -41,7 +41,7 @@ if [ "$RUN_FULL" = true ]; then
     plasma-desktop kwin plasma-workspace xorg-x11-server-Xwayland \
     polkit-kde xdg-desktop-portal-kde xdg-desktop-portal-gtk \
     systemsettings kscreen kinfocenter colord-kde \
-    plasma-nm NetworkManager-wifi firewall-config \
+    plasma-nm NetworkManager-wifi firewall-config iwlwifi-mvm-firmware \
     bluez bluedevil powerdevil power-profiles-daemon \
     fwupd irqbalance rsync wget \
     pipewire pipewire-alsa pipewire-pulseaudio \
