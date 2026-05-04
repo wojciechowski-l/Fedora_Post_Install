@@ -222,7 +222,7 @@ if [ "$RUN_DRIVERS" = true ]; then
     # 2. Nvidia & Intel Drivers
     sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda xorg-x11-drv-nvidia-cuda-libs \
         libva-nvidia-driver nvidia-settings intel-media-driver libva-utils vdpauinfo \
-        mesa-vulkan-drivers intel-compute-runtime oneVPL-intel-gpu libva-intel-driver
+        mesa-vulkan-drivers intel-compute-runtime oneVPL-intel-gpu
     # 3. Trigger and wait for akmod build
     echo "Starting Nvidia kernel module build..."
     sudo akmods --force
