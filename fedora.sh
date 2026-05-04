@@ -41,7 +41,7 @@ if [ "$RUN_FULL" = true ]; then
     plasma-desktop kwin plasma-workspace xorg-x11-server-Xwayland \
     polkit-kde xdg-desktop-portal-kde xdg-desktop-portal-gtk \
     systemsettings kscreen kinfocenter colord-kde \
-    plasma-nm NetworkManager-wifi firewall-config iwlwifi-mvm-firmware \
+    plasma-nm NetworkManager-wifi firewall-config iwlwifi-mvm-firmware microcode_ctl \
     bluez bluedevil powerdevil power-profiles-daemon \
     fwupd irqbalance rsync wget \
     pipewire pipewire-alsa pipewire-pulseaudio \
@@ -222,20 +222,18 @@ if [ "$RUN_DRIVERS" = true ]; then
     # 2. Nvidia & Intel Drivers
     sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda xorg-x11-drv-nvidia-cuda-libs \
         libva-nvidia-driver nvidia-settings intel-media-driver libva-utils vdpauinfo \
-        mesa-vulkan-drivers intel-compute-runtime oneVPL-intel-gpu thermald
-
+        mesa-vulkan-drivers intel-compute-runtime oneVPL-intel-gpu libva-intel-driver
     # 3. Trigger and wait for akmod build
     echo "Starting Nvidia kernel module build..."
     sudo akmods --force
     echo "Nvidia module build complete!"
 
     # 4. Nvidia system services
-    sudo systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service thermald
+    sudo systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service nvidia-persistenced
 
     # 5. KWin / EGL environment for Nvidia
     sudo mkdir -p /etc/environment.d
-    echo "KWIN_DRM_USE_EGL_STREAMS=0" | sudo tee /etc/environment.d/kwin-nvidia.conf
-    echo "__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json" | sudo tee -a /etc/environment.d/kwin-nvidia.conf
+    printf 'KWIN_DRM_USE_EGL_STREAMS=0' | sudo tee /etc/environment.d/kwin-nvidia.conf
 
     sudo tee /etc/plasmalogin.conf > /dev/null <<EOF
 [Autologin]
